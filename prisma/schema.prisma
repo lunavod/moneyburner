@@ -1,0 +1,218 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["interactiveTransactions"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String  @id @default(uuid()) @db.Uuid
+  email             String  @unique
+  username          String  @unique
+  passwordHash      String
+  authId            String  @unique
+  passwordResetHash String? @unique
+
+  createdAt DateTime @default(now())
+
+  currencies      Currency[]
+  accounts        Account[]
+  stores          Store[]
+  products        Product[]
+  purchases       Purchase[]
+  PurchaseElement PurchaseElement[]
+  MoneyTransfer   MoneyTransfer[]
+}
+
+model Task {
+  id        String     @id() @default(uuid()) @db.Uuid
+  createdAt DateTime   @default(now()) @db.Timestamp(6)
+  updatedAt DateTime   @default(now()) @db.Timestamp(6)
+  name      String     @db.VarChar
+  data      Json
+  retries   Int        @default(0)
+  status    TaskStatus @default(CREATED)
+  eventId   String?    @db.VarChar
+  isBig     Boolean    @default(false)
+  runs      TaskRun[]
+
+  parent   Task?   @relation("parent", fields: [parentId], references: [id])
+  parentId String? @db.Uuid
+  children Task[]  @relation("parent")
+
+  parentRun   TaskRun? @relation("parentRun", fields: [parentRunId], references: [id])
+  parentRunId String?  @db.Uuid
+}
+
+model TaskRun {
+  id         String        @id() @default(uuid()) @db.Uuid
+  createdAt  DateTime      @default(now()) @db.Timestamp(6)
+  updatedAt  DateTime      @default(now()) @db.Timestamp(6)
+  status     TaskRunStatus
+  finishedAt DateTime?     @db.Timestamptz(6)
+
+  subtasks Task[] @relation("parentRun")
+
+  task   Task?   @relation(fields: [taskId], references: [id])
+  taskId String? @db.Uuid
+}
+
+enum TaskRunStatus {
+  created
+  running
+  done
+  error
+}
+
+enum TaskStatus {
+  CREATED
+  RUNNING
+  SUCCESS
+  ERROR
+}
+
+model Currency {
+  id     String  @id @default(uuid()) @db.Uuid
+  code   String
+  name   String
+  symbol String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id])
+  userId   String    @db.Uuid
+  accounts Account[]
+}
+
+model Account {
+  id   String @id @default(uuid()) @db.Uuid
+  name String
+
+  currency   Currency @relation(fields: [currencyId], references: [id])
+  currencyId String   @db.Uuid
+
+  user   User   @relation(fields: [userId], references: [id])
+  userId String @db.Uuid
+
+  type AccountType @default(CREDIT_CARD)
+
+  currentValue Float @default(0)
+
+  creditLimit    Float? @default(0)
+  limitStartDate Int?
+  limitUsed      Float  @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  purchases    Purchase[]
+  transfersOut MoneyTransfer[] @relation(name: "transferSource")
+  transfersIn  MoneyTransfer[] @relation(name: "transferTarget")
+
+  leumiLogin      String?
+  leumiPassword   String?
+  leumiCardNumber String?
+}
+
+enum AccountType {
+  CASH
+  CREDIT_CARD
+  DEBIT_CARD
+}
+
+model MoneyTransfer {
+  id String @id @default(uuid()) @db.Uuid
+
+  sourceAccount   Account? @relation(name: "transferSource", fields: [sourceAccountId], references: [id])
+  sourceAccountId String?  @db.Uuid
+
+  targetAccount   Account? @relation(name: "transferTarget", fields: [targetAccountId], references: [id])
+  targetAccountId String?  @db.Uuid
+
+  name String?
+
+  decrement Float @default(0)
+  increment Float @default(0)
+
+  user   User   @relation(fields: [userId], references: [id])
+  userId String @db.Uuid
+
+  date DateTime @default(now())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+}
+
+model Store {
+  id    String  @id @default(uuid()) @db.Uuid
+  name  String
+  alias String?
+
+  user   User   @relation(fields: [userId], references: [id])
+  userId String @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  purchases Purchase[]
+}
+
+model Product {
+  id   String @id @default(uuid()) @db.Uuid
+  name String
+
+  user   User   @relation(fields: [userId], references: [id])
+  userId String @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  purchaseElements PurchaseElement[]
+}
+
+model Purchase {
+  id String @id @default(uuid()) @db.Uuid
+
+  store   Store  @relation(fields: [storeId], references: [id])
+  storeId String @db.Uuid
+
+  user   User   @relation(fields: [userId], references: [id])
+  userId String @db.Uuid
+
+  account   Account @relation(fields: [accountId], references: [id])
+  accountId String  @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  date DateTime @default(now())
+
+  value Float @default(0)
+
+  elements PurchaseElement[]
+}
+
+model PurchaseElement {
+  id String @id @default(uuid()) @db.Uuid
+
+  purchase   Purchase @relation(fields: [purchaseId], references: [id])
+  purchaseId String   @db.Uuid
+
+  product   Product @relation(fields: [productId], references: [id])
+  productId String  @db.Uuid
+
+  price Float
+
+  user   User   @relation(fields: [userId], references: [id])
+  userId String @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+}

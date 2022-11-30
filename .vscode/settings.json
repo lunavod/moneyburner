@@ -1,0 +1,12 @@
+{
+  "cSpell.words": [
+    "nestjs",
+    "nspname",
+    "relkind",
+    "relname",
+    "relnamespace",
+    "schemaname",
+    "tablename"
+  ],
+  "deepscan.enable": true
+}
