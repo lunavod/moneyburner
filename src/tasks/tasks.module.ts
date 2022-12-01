@@ -1,5 +1,6 @@
 import { ClickHouseModule } from '@depyronick/nestjs-clickhouse'
 import { forwardRef, Module } from '@nestjs/common'
+import { AccountsModule } from 'src/accounts/accounts.module'
 import { LeumiModule } from 'src/leumi/leumi.module'
 import { UsersModule } from 'src/users/users.module'
 import { TaskLogger } from 'src/utils/clickhouse.logger'
@@ -27,7 +28,12 @@ if (process.env.CH_USERNAME) {
 }
 
 @Module({
-  imports: [UsersModule, ClickHouseModule.register([chConfig]), LeumiModule],
+  imports: [
+    UsersModule,
+    ClickHouseModule.register([chConfig]),
+    LeumiModule,
+    AccountsModule,
+  ],
   providers: [
     TasksService,
     TestTask,

@@ -1,13 +1,22 @@
 import { Injectable } from '@nestjs/common'
 import { Prisma } from '@prisma/client'
+import { AccountsService } from 'src/accounts/accounts.service'
 import { PrismaService } from 'src/prisma.service'
 
 @Injectable()
 export class MoneyTransfersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private accounts: AccountsService,
+  ) {}
 
-  create(data: Prisma.MoneyTransferUncheckedCreateInput) {
-    return this.prisma.moneyTransfer.create({ data })
+  async create(data: Prisma.MoneyTransferUncheckedCreateInput) {
+    const resp = await this.prisma.moneyTransfer.create({ data })
+    if (resp.targetAccountId)
+      await this.accounts.recalculateBalance(resp.targetAccountId)
+    if (resp.sourceAccountId)
+      await this.accounts.recalculateBalance(resp.sourceAccountId)
+    return resp
   }
 
   findAll() {
@@ -29,11 +38,23 @@ export class MoneyTransfersService {
     })
   }
 
-  update(id: string, data: Prisma.MoneyTransferUncheckedUpdateInput) {
-    return this.prisma.moneyTransfer.update({ where: { id }, data })
+  async update(id: string, data: Prisma.MoneyTransferUncheckedUpdateInput) {
+    const resp = await this.prisma.moneyTransfer.update({ where: { id }, data })
+    if (resp.targetAccountId)
+      await this.accounts.recalculateBalance(resp.targetAccountId)
+    if (resp.sourceAccountId)
+      await this.accounts.recalculateBalance(resp.sourceAccountId)
+    return resp
   }
 
-  remove(id: string) {
-    return this.prisma.moneyTransfer.delete({ where: { id } })
+  async remove(id: string) {
+    const resp = await this.findOne(id)
+
+    if (resp.targetAccountId)
+      await this.accounts.recalculateBalance(resp.targetAccountId)
+    if (resp.sourceAccountId)
+      await this.accounts.recalculateBalance(resp.sourceAccountId)
+
+    await this.prisma.moneyTransfer.delete({ where: { id } })
   }
 }

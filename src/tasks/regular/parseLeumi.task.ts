@@ -1,5 +1,6 @@
 import { groupBy, omit } from 'lodash'
 import { DateTime } from 'luxon'
+import { AccountsService } from 'src/accounts/accounts.service'
 import { LeumiService } from 'src/leumi/leumi.service'
 import { PrismaService } from 'src/prisma.service'
 import { TaskRunner } from 'src/tasks/task-manager'
@@ -9,7 +10,11 @@ import { ClickHouseLogger } from 'src/utils/clickhouse.logger'
 export class ParseLeumi {
   private logger: ClickHouseLogger
 
-  constructor(private prisma: PrismaService, private leumi: LeumiService) {}
+  constructor(
+    private prisma: PrismaService,
+    private leumi: LeumiService,
+    private accounts: AccountsService,
+  ) {}
 
   async main(task, run, logger) {
     this.logger = logger
@@ -108,6 +113,8 @@ export class ParseLeumi {
           }
         }
       }
+
+      await this.accounts.recalculateBalance(account.id)
     }
 
     this.logger.log('DONE')
