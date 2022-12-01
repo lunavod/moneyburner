@@ -5,7 +5,7 @@ import puppeteer from 'puppeteer'
 @Injectable()
 export class LeumiService {
   async parse(login: string, password: string, card: string) {
-    const browser = await puppeteer.launch({ headless: true })
+    const browser = await puppeteer.launch({ headless: true,  args: ['--no-sandbox', '--disable-setuid-sandbox'], })
     const page = await browser.newPage()
 
     await page.goto('https://hb2.bankleumi.co.il/staticcontent/gate-keeper/he/')

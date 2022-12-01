@@ -28,7 +28,7 @@ import { UsersService } from './users.service'
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  @Get()
+  @Get('test')
   findAll() {
     return this.usersService.findAll()
   }
@@ -51,7 +51,7 @@ export class UsersController {
     return this.usersService.update(id, data)
   }
 
-  @Public({ only: true })
+//  @Public({ only: true })
   @Post()
   @UsePipes(ValidationPipe)
   async register(@Body() data: CreateUserDto) {
