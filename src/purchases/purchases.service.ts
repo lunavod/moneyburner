@@ -16,6 +16,13 @@ export class PurchasesService {
     return result
   }
 
+  findByStore(storeId: string) {
+    return this.prisma.purchase.findMany({
+      where: { storeId },
+      include: { account: { include: { currency: true } } },
+    })
+  }
+
   findAll() {
     return this.prisma.purchase.findMany({
       include: { store: true, account: { include: { currency: true } } },

@@ -7,6 +7,7 @@ import {
   Param,
   Delete,
   UseGuards,
+  Query,
 } from '@nestjs/common'
 import { User } from '@prisma/client'
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard'
@@ -30,7 +31,8 @@ export class PurchasesController {
   }
 
   @Get()
-  findAll() {
+  findAll(@Query('storeId') storeId?: string) {
+    if (storeId) return this.purchasesService.findByStore(storeId)
     return this.purchasesService.findAll()
   }
 
