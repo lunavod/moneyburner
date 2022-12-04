@@ -21,18 +21,29 @@ export class ParseLeumi {
 
     const accounts = await this.prisma.account.findMany({
       where: {
-        leumiLogin: { not: null },
-        leumiPassword: { not: null },
-        leumiCardNumber: { not: null },
+        AND: [
+          {
+            leumiLogin: { not: null },
+            leumiPassword: { not: null },
+            leumiCardNumber: { not: null },
+          },
+          {
+            leumiLogin: { not: '' },
+            leumiPassword: { not: '' },
+            leumiCardNumber: { not: '' },
+          },
+        ],
       },
     })
 
     for (const account of accounts) {
+      console.log(account)
       const { records, transfers } = await this.leumi.parse(
         account.leumiLogin,
         account.leumiPassword,
         account.leumiCardNumber,
       )
+      console.log(records, transfers)
 
       const recordGroups = groupBy(
         records.flat(),
@@ -85,10 +96,16 @@ export class ParseLeumi {
       for (const group of Object.values(transferGroups)) {
         const record = group[0]
         const existing = await this.prisma.moneyTransfer.findMany({
-          where: {
-            targetAccountId: account.id,
-            increment: record.value,
-          },
+          where:
+            record.value > 0
+              ? {
+                  targetAccountId: account.id,
+                  increment: record.value,
+                }
+              : {
+                  sourceAccountId: account.id,
+                  decrement: Math.abs(record.value),
+                },
         })
 
         const diff =
@@ -103,11 +120,12 @@ export class ParseLeumi {
           for (let i = 0; i < diff; i++) {
             await this.prisma.moneyTransfer.create({
               data: {
-                increment: group[0].value,
-                decrement: 0,
+                increment: record.value > 0 ? group[0].value : 0,
+                decrement: record.value > 0 ? 0 : Math.abs(group[0].value),
                 userId: account.userId,
                 date: group[0].date,
-                targetAccountId: account.id,
+                targetAccountId: record.value > 0 ? account.id : null,
+                sourceAccountId: record.value > 0 ? null : account.id,
               },
             })
           }

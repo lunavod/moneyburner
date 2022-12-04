@@ -5,7 +5,10 @@ import puppeteer from 'puppeteer'
 @Injectable()
 export class LeumiService {
   async parse(login: string, password: string, card: string) {
-    const browser = await puppeteer.launch({ headless: true,  args: ['--no-sandbox', '--disable-setuid-sandbox'], })
+    const browser = await puppeteer.launch({
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    })
     const page = await browser.newPage()
 
     await page.goto('https://hb2.bankleumi.co.il/staticcontent/gate-keeper/he/')
@@ -21,8 +24,12 @@ export class LeumiService {
       button.id = 'loginButton'
     })
 
+    console.log('Page loaded')
+
     await page.type('#loginInput', login)
     await page.type('#passwordInput', password)
+
+    console.log('Typed', login, password)
 
     await page.click('#loginButton')
 
@@ -41,7 +48,9 @@ export class LeumiService {
         const date =
           action.querySelector<HTMLDivElement>('.num.value').innerText
         const value = parseFloat(
-          action.querySelector<HTMLDivElement>('.balance-link-color').innerText,
+          action
+            .querySelector<HTMLDivElement>('.balance-link-color')
+            .innerText.replace(',', ''),
         )
 
         actions.push({ date, value })
@@ -96,7 +105,7 @@ export class LeumiService {
               }
 
               if (i === 5) {
-                data.value = parseFloat(cell.innerText.trim())
+                data.value = parseFloat(cell.innerText.trim().replace(',', ''))
               }
             })
           } else {
@@ -110,7 +119,7 @@ export class LeumiService {
               }
 
               if (i === 3) {
-                data.value = parseFloat(cell.innerText.trim())
+                data.value = parseFloat(cell.innerText.trim().replace(',', ''))
               }
             })
           }
@@ -126,6 +135,8 @@ export class LeumiService {
     })
 
     await browser.close()
+
+    console.log(records, transfers)
 
     return {
       records: records.flat().map((r) => ({
